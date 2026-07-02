@@ -42,6 +42,7 @@ export const LIMPEZAS: {
 // preco = valor fixo modesto do extra (o app cobra hora extra barata ~R$16/h,
 // então cobrar o adicional por hora cheia encareceria demais).
 export const ADICIONAIS: { id: string; nome: string; horas: number; preco: number }[] = [
+  { id: "area_servico", nome: "Área de serviço / lavanderia", horas: 0.5, preco: 15 },
   { id: "geladeira", nome: "Interior de geladeira", horas: 0.5, preco: 15 },
   { id: "janelas", nome: "Interior de janelas", horas: 1, preco: 30 },
   { id: "armarios", nome: "Interior de armários de cozinha", horas: 1.5, preco: 30 },

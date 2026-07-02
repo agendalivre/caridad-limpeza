@@ -267,8 +267,8 @@ export default function Reservar() {
               <p className="mt-5 flex items-start gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-ink-soft">
                 <IconCheck width={16} height={16} className="mt-0.5 shrink-0 text-emerald-600" />
                 <span>
-                  <b className="font-semibold text-ink">Já incluído:</b> cozinha, sala, área de
-                  serviço e áreas comuns — além dos quartos e banheiros que você informar.
+                  <b className="font-semibold text-ink">Já incluído:</b> sala e cozinha. Os quartos,
+                  banheiros e demais áreas (como a área de serviço) você escolhe abaixo.
                 </span>
               </p>
             </section>

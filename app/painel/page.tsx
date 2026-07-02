@@ -495,6 +495,7 @@ function Painel() {
             Agenda · <span className="text-emerald-600">Caridad</span>
           </span>
           <div className="flex items-center gap-4 text-sm">
+            <Link href="/painel/calendario" className="font-medium text-ink-soft hover:text-ink">Calendário</Link>
             <Link href="/painel/qr" className="font-medium text-ink-soft hover:text-ink">Meu QR</Link>
             <Link href="/painel/clientes" className="font-medium text-ink-soft hover:text-ink">Clientes</Link>
             <button onClick={sair} className="font-medium text-ink-mute hover:text-ink">Sair</button>
