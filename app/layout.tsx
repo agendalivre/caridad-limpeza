@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Roboto_Serif, Roboto } from "next/font/google";
+import { Fraunces, Inter } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
 import "./globals.css";
 
-const robotoSerif = Roboto_Serif({
+const fraunces = Fraunces({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
@@ -11,9 +11,9 @@ const robotoSerif = Roboto_Serif({
   display: "swap",
 });
 
-const roboto = Roboto({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-sans",
   display: "swap",
 });
@@ -83,7 +83,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className={`${robotoSerif.variable} ${roboto.variable}`}>
+    <html lang="pt-BR" className={`${fraunces.variable} ${inter.variable}`}>
       <body>
         <script
           type="application/ld+json"
