@@ -118,6 +118,7 @@ function Card({
   busy,
   onStatus,
   onPago,
+  onCancelar,
   onPix,
   onQuando,
   onExecucao,
@@ -127,6 +128,7 @@ function Card({
   busy: boolean;
   onStatus: (id: string, s: string) => void;
   onPago: (a: Agendamento) => void;
+  onCancelar: (a: Agendamento) => void;
   onPix: (a: Agendamento) => void;
   onQuando: (id: string, data: string, hora: string) => void;
   onExecucao: (id: string, execucao: string) => void;
@@ -326,7 +328,7 @@ function Card({
             <button onClick={() => onPago(a)} disabled={busy} className={`btn-ghost ${act} disabled:opacity-50`}>
               Marcar pago
             </button>
-            <button onClick={() => onStatus(a.id, "cancelado")} disabled={busy} className="px-3 py-2 text-xs text-ink-mute hover:text-red-600">
+            <button onClick={() => onCancelar(a)} disabled={busy} className="px-3 py-2 text-xs text-ink-mute hover:text-red-600">
               <IconX width={14} height={14} />
             </button>
           </>
@@ -364,6 +366,7 @@ function Painel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [pix, setPix] = useState<{ valor: number; desc: string } | null>(null);
   const [aviso, setAviso] = useState("");
+  const [confirmacao, setConfirmacao] = useState<{ tipo: "cancelar" | "pago"; a: Agendamento } | null>(null);
 
   const load = useCallback(async () => {
     const [ag, pg] = await Promise.all([
@@ -410,6 +413,15 @@ function Painel() {
 
   useEffect(() => {
     load();
+    // Realtime: atualiza a agenda sozinha quando chega/muda uma reserva.
+    const canal = supabase
+      .channel("painel-agendamentos")
+      .on("postgres_changes", { event: "*", schema: "public", table: "agendamentos" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "pagamentos" }, () => load())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(canal);
+    };
   }, [load]);
 
   async function mudarStatus(id: string, status: string) {
@@ -467,6 +479,14 @@ function Painel() {
 
   const onPix = (x: Agendamento) => setPix({ valor: x.valor, desc: x.servico_nome ?? "Limpeza" });
 
+  async function executarConfirmacao() {
+    if (!confirmacao) return;
+    const { tipo, a } = confirmacao;
+    setConfirmacao(null);
+    if (tipo === "pago") await marcarPago(a);
+    else await mudarStatus(a.id, "cancelado");
+  }
+
   const solicitacoes = items.filter((i) => i.status === "solicitado");
   const amanha = items.filter((i) => i.status === "confirmado" && i.data === AMANHA());
   const agendados = items.filter((i) => i.status === "confirmado" && i.data !== AMANHA());
@@ -479,7 +499,8 @@ function Painel() {
       a={a}
       busy={busy === a.id}
       onStatus={mudarStatus}
-      onPago={marcarPago}
+      onPago={(x) => setConfirmacao({ tipo: "pago", a: x })}
+      onCancelar={(x) => setConfirmacao({ tipo: "cancelar", a: x })}
       onPix={onPix}
       onQuando={salvarQuando}
       onExecucao={salvarExecucao}
@@ -576,6 +597,33 @@ function Painel() {
       </div>
 
       {pix && <QrPix valor={pix.valor} descricao={pix.desc} onClose={() => setPix(null)} />}
+
+      {confirmacao && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-ink/40 px-5" onClick={() => setConfirmacao(null)}>
+          <div className="card w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
+            <p className="font-serif text-lg font-semibold text-ink">
+              {confirmacao.tipo === "pago" ? "Marcar como pago?" : "Cancelar este agendamento?"}
+            </p>
+            <p className="mt-2 text-sm text-ink-soft">
+              {confirmacao.a.clientes?.nome ?? "Cliente"} · {fmtR$(confirmacao.a.valor)}
+              {confirmacao.tipo === "pago"
+                ? " — registra o pagamento na sua conta do mês."
+                : " — ele sai da agenda."}
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button onClick={() => setConfirmacao(null)} className="btn-ghost px-4 py-2 text-sm">Voltar</button>
+              <button
+                onClick={executarConfirmacao}
+                className={`rounded-full px-4 py-2 text-sm font-semibold text-white ${
+                  confirmacao.tipo === "pago" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"
+                }`}
+              >
+                {confirmacao.tipo === "pago" ? "Sim, marcar pago" : "Sim, cancelar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
