@@ -30,7 +30,7 @@ export function Servicos() {
             </h2>
           </div>
           <a href="/reservar" className="btn-emerald btn-lg shrink-0">
-            Calcular orçamento
+            Ver meu preço em 1 minuto
             <IconArrowRight width={18} height={18} />
           </a>
         </Reveal>

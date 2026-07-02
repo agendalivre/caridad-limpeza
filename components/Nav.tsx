@@ -43,7 +43,7 @@ export function Nav() {
           </div>
 
           <a href="/reservar" className="btn-emerald px-5 py-2.5 text-sm">
-            Fazer orçamento
+            Ver meu preço
             <IconArrowRight width={16} height={16} />
           </a>
         </nav>

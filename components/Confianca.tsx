@@ -7,13 +7,13 @@ import type { ReactNode } from "react";
 const HOOKS: { icon: ReactNode; titulo: string; texto: string }[] = [
   {
     icon: <IconShield width={24} height={24} />,
-    titulo: "Você sempre sabe quem entra",
+    titulo: "Você nunca abre a porta pra um estranho",
     texto:
       "A mesma profissional em todas as visitas. Nada de rostos diferentes a cada semana — só confiança que se constrói.",
   },
   {
     icon: <IconWallet width={24} height={24} />,
-    titulo: "Trato direto, preço justo",
+    titulo: "Sem app no meio. Sem comissão no seu bolso.",
     texto:
       "Combinamos tudo pelo WhatsApp, sem a comissão de um aplicativo encarecendo o seu serviço.",
   },

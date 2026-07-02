@@ -1,19 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Roboto_Serif, Roboto } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
 import "./globals.css";
 
-const playfair = Playfair_Display({
+const robotoSerif = Roboto_Serif({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-playfair",
+  style: ["normal", "italic"],
+  variable: "--font-serif",
   display: "swap",
 });
 
-const inter = Inter({
+const roboto = Roboto({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-inter",
+  weight: ["300", "400", "500", "700"],
+  variable: "--font-sans",
   display: "swap",
 });
 
@@ -82,7 +83,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className={`${playfair.variable} ${inter.variable}`}>
+    <html lang="pt-BR" className={`${robotoSerif.variable} ${roboto.variable}`}>
       <body>
         <script
           type="application/ld+json"

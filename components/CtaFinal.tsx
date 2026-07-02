@@ -28,7 +28,7 @@ export function CtaFinal() {
               </p>
               <div className="mt-10 flex flex-col gap-3.5 sm:flex-row">
                 <a href="/reservar" className="btn-emerald btn-lg">
-                  Calcular meu orçamento
+                  Reservar meu horário
                   <IconArrowRight width={18} height={18} />
                 </a>
                 <a

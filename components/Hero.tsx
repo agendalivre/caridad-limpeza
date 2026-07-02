@@ -105,7 +105,7 @@ export function Hero() {
             className="mt-10 flex flex-col gap-3.5 sm:flex-row"
           >
             <a href="/reservar" className="btn-emerald btn-lg">
-              Calcular meu orçamento
+              Ver meu preço em 1 minuto
               <IconArrowRight width={18} height={18} />
             </a>
             <a
@@ -115,7 +115,7 @@ export function Hero() {
               className="btn-ghost btn-lg"
             >
               <IconWhatsApp width={20} height={20} />
-              Falar no WhatsApp
+              Tirar dúvida no WhatsApp
             </a>
           </motion.div>
 
