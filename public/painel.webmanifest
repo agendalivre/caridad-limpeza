@@ -1,0 +1,17 @@
+{
+  "name": "Agenda · Caridad",
+  "short_name": "Agenda",
+  "description": "Painel de agenda, clientes e cobranças de Caridad Ceregido.",
+  "lang": "pt-BR",
+  "start_url": "/painel",
+  "scope": "/painel",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f2ea",
+  "theme_color": "#17150f",
+  "icons": [
+    { "src": "/icon-painel-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-painel-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-painel-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
