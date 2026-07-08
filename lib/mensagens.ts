@@ -1,5 +1,6 @@
 // Mensagens prontas de acompanhamento do cliente (enviadas do painel com 1 toque).
-// Tom caloroso, "sempre a mesma pessoa". Tudo editável por Caridad aqui.
+// Tom da Caridad: pessoa real, calorosa e honesta — "sempre a mesma pessoa que
+// cuida da sua casa". Nada de texto de robô. Tudo editável por ela aqui.
 import { CONFIG } from "./config";
 
 export type MsgCtx = {
@@ -11,60 +12,61 @@ export type MsgCtx = {
 
 export type ModeloMensagem = {
   id: string;
-  titulo: string; // rótulo curto no menu
-  emoji: string;
+  titulo: string; // rótulo curto no menu do painel
   texto: (c: MsgCtx) => string;
 };
 
 const primeiroNome = (nome: string) => (nome || "").trim().split(/\s+/)[0] || "";
 
-// Os momentos seguem o ciclo do serviço: confirmar → lembrar → a caminho →
-// concluir/cobrar → agradecer → reservar a próxima (fidelização).
+// Os momentos seguem o ciclo do serviço: confirmar -> lembrar -> a caminho ->
+// concluir/cobrar -> agradecer -> reservar a próxima (fidelização).
 export const MODELOS_MENSAGEM: ModeloMensagem[] = [
   {
     id: "confirmar",
     titulo: "Confirmar agendamento",
-    emoji: "✅",
     texto: (c) =>
-      `Oi ${primeiroNome(c.nome)}! 😊 Aqui é a ${CONFIG.primeiroNome}. Confirmei sua ${c.servico.toLowerCase()} para ${c.quando}. Qualquer coisa, é só me chamar por aqui!`,
+      `Oi ${primeiroNome(c.nome)}, tudo bem? Aqui é a ${CONFIG.primeiroNome}. ` +
+      `Já deixei sua limpeza marcada para ${c.quando} e vou cuidar de tudo com muito carinho. ` +
+      `Se precisar mudar alguma coisa, é só me falar por aqui. 😊`,
   },
   {
     id: "lembrete",
     titulo: "Lembrete da véspera",
-    emoji: "🔔",
     texto: (c) =>
-      `Oi ${primeiroNome(c.nome)}! 💚 Passando para lembrar da sua limpeza em ${c.quando}. Está tudo certo para o horário combinado?`,
+      `Oi ${primeiroNome(c.nome)}, tudo bem? Passando só para lembrar da nossa limpeza ${c.quando}. ` +
+      `Está tudo certo para você? Qualquer coisa a gente ajeita. 💚`,
   },
   {
     id: "caminho",
     titulo: "Estou a caminho",
-    emoji: "🚗",
     texto: (c) =>
-      `Oi ${primeiroNome(c.nome)}! Já estou a caminho 🚗 Chego em breve para deixar tudo impecável para você ✨`,
+      `Oi ${primeiroNome(c.nome)}! Já estou a caminho, chego pertinho do horário. ` +
+      `Vou deixar sua casa limpinha e cheirosa. Até já! 😊`,
   },
   {
     id: "concluido",
     titulo: "Concluí + cobrança Pix",
-    emoji: "✨",
     texto: (c) =>
-      `${primeiroNome(c.nome)}, terminei sua limpeza! ✨ Deixei tudo limpinho e cheiroso. O valor combinado foi ${c.valor} — quando puder, você pode enviar pelo Pix (chave ${CONFIG.pix.chave} · ${CONFIG.pix.nome}). Muito obrigada pela confiança! 💚`,
+      `${primeiroNome(c.nome)}, terminei tudo por aqui! Deixei sua casa limpinha e cheirosa, ` +
+      `espero de coração que você goste. O valor que combinamos foi ${c.valor} — quando puder, ` +
+      `pode fazer o Pix na chave ${CONFIG.pix.chave} (em nome de ${CONFIG.pix.nome}). ` +
+      `Muito obrigada pela confiança, viu? 💚`,
   },
   {
     id: "agradecer",
     titulo: "Agradecer" + (CONFIG.linkAvaliacao ? " + avaliação" : ""),
-    emoji: "🙏",
     texto: (c) =>
-      `Foi um prazer cuidar da sua casa, ${primeiroNome(c.nome)}! 😊${
-        CONFIG.linkAvaliacao
-          ? ` Se puder deixar uma avaliação, me ajuda muito: ${CONFIG.linkAvaliacao}`
-          : " Se precisar de qualquer coisa, é só me chamar."
-      } Obrigada! 💚`,
+      `${primeiroNome(c.nome)}, foi um prazer cuidar da sua casa hoje! ` +
+      (CONFIG.linkAvaliacao
+        ? `Se sobrar um minutinho, uma avaliação sua me ajuda demais: ${CONFIG.linkAvaliacao}. `
+        : `Qualquer coisa que precisar, é só me chamar. `) +
+      `Obrigada pela confiança de sempre. 💚`,
   },
   {
     id: "reagendar",
     titulo: "Reservar a próxima",
-    emoji: "📅",
     texto: (c) =>
-      `Oi ${primeiroNome(c.nome)}! 💚 Já faz um tempinho da última limpeza. Quer que eu reserve um horário para você? É só me dizer o melhor dia. 😊`,
+      `Oi ${primeiroNome(c.nome)}, tudo bem? Já faz um tempinho da última limpeza e fiquei ` +
+      `pensando em você. Quer que eu já reserve um horário? Me diz o melhor dia que eu separo. 😊`,
   },
 ];

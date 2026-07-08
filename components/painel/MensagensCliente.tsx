@@ -41,10 +41,9 @@ export function MensagensCliente({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setAberto(false)}
-                className="flex items-center gap-2.5 border-b border-line px-3 py-2.5 text-left text-sm text-ink-soft transition-colors last:border-0 hover:bg-emerald-50 hover:text-ink"
+                className="block border-b border-line px-3 py-2.5 text-left text-sm text-ink-soft transition-colors last:border-0 hover:bg-emerald-50 hover:text-ink"
               >
-                <span className="text-base">{m.emoji}</span>
-                <span>{m.titulo}</span>
+                {m.titulo}
               </a>
             ))}
           </div>
