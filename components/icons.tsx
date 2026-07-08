@@ -152,6 +152,13 @@ export const IconPhone = (p: P) => (
   </svg>
 );
 
+export const IconCalendar = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="3" y="4.5" width="18" height="16" rx="2" />
+    <path d="M3 9.5h18M8 3v3M16 3v3" />
+  </svg>
+);
+
 export const IconCopy = (p: P) => (
   <svg {...base(p)}>
     <rect x="9" y="9" width="11" height="11" rx="2" />

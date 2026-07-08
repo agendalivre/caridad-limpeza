@@ -16,6 +16,7 @@ import {
   IconBus,
   IconPhone,
   IconCopy,
+  IconCalendar,
 } from "@/components/icons";
 
 type Cliente = {
@@ -72,13 +73,29 @@ const ponto = (a: Agendamento) =>
 
 const mapsLink = (a: Agendamento) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ponto(a))}`;
-const moovitLink = (a: Agendamento) => {
-  const c = a.clientes;
-  const to = encodeURIComponent(a.endereco || c?.nome || "Destino");
-  if (c?.lat && c?.lng) return `https://moovit.com/?to=${to}&tll=${c.lat}_${c.lng}&lang=pt-br`;
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(enderecoCompleto(a))}&travelmode=transit`;
-};
+// Ônibus: Google Maps em modo transporte público (mostra as linhas de Curitiba;
+// funciona sempre — o deep link do Moovit era instável).
+const onibusLink = (a: Agendamento) =>
+  `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ponto(a))}&travelmode=transit`;
 const telLink = (a: Agendamento) => `tel:+${(a.clientes?.whatsapp ?? "").replace(/\D/g, "")}`;
+
+// Adiciona o serviço ao Google Agenda de Caridad (ela ganha os lembretes nativos do celular).
+function googleCalLink(a: Agendamento): string | null {
+  if (!a.data) return null;
+  const [y, m, d] = a.data.split("-").map(Number);
+  const [hh, mi] = (a.hora_inicio ?? "09:00").slice(0, 5).split(":").map(Number);
+  const inicio = new Date(y, m - 1, d, hh, mi);
+  const fim = new Date(inicio.getTime() + Math.max(1, a.horas ?? 3) * 3600000);
+  const fmt = (dt: Date) => dt.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `Limpeza — ${a.clientes?.nome ?? "Cliente"}`,
+    dates: `${fmt(inicio)}/${fmt(fim)}`,
+    details: resumoTexto(a),
+    location: enderecoCompleto(a),
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
 
 const resumoTexto = (a: Agendamento) =>
   [
@@ -247,12 +264,17 @@ function Card({
           <a href={mapsLink(a)} target="_blank" rel="noopener noreferrer" className={nav}>
             <IconMapPin width={15} height={15} /> Mapa
           </a>
-          <a href={moovitLink(a)} target="_blank" rel="noopener noreferrer" className={nav}>
+          <a href={onibusLink(a)} target="_blank" rel="noopener noreferrer" className={nav}>
             <IconBus width={15} height={15} /> Ônibus
           </a>
           <a href={telLink(a)} className={nav}>
             <IconPhone width={15} height={15} /> Ligar
           </a>
+          {googleCalLink(a) && (
+            <a href={googleCalLink(a)!} target="_blank" rel="noopener noreferrer" className={nav}>
+              <IconCalendar width={15} height={15} /> Meu calendário
+            </a>
+          )}
           <button onClick={copiar} className={nav}>
             <IconCopy width={15} height={15} /> {copiado ? "Copiado!" : "Copiar dados"}
           </button>
