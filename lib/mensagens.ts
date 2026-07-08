@@ -54,13 +54,10 @@ export const MODELOS_MENSAGEM: ModeloMensagem[] = [
   },
   {
     id: "agradecer",
-    titulo: "Agradecer" + (CONFIG.linkAvaliacao ? " + avaliação" : ""),
+    titulo: "Agradecer",
     texto: (c) =>
       `${primeiroNome(c.nome)}, foi um prazer cuidar da sua casa hoje! ` +
-      (CONFIG.linkAvaliacao
-        ? `Se sobrar um minutinho, uma avaliação sua me ajuda demais: ${CONFIG.linkAvaliacao}. `
-        : `Qualquer coisa que precisar, é só me chamar. `) +
-      `Obrigada pela confiança de sempre. 💚`,
+      `Qualquer coisa que precisar, é só me chamar. Obrigada pela confiança de sempre. 💚`,
   },
   {
     id: "reagendar",
