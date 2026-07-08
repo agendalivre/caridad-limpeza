@@ -1,7 +1,7 @@
 // Público (somente leitura): blocos ocupados da agenda nos próximos meses.
 // Não expõe nenhum dado de cliente — só data, hora e duração.
-// Inclui as PROJEÇÕES de clientes recorrentes (semanal/quinzenal/mensal) para
-// que /reservar bloqueie também os dias futuros que um cliente fixo já ocupa.
+// Inclui as PROJEÇÕES de clientes recorrentes (semanal/quinzenal/mensal) e
+// respeita EXCEÇÕES (ocorrência movida ou cancelada só num dia).
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const cors = {
@@ -40,19 +40,26 @@ Deno.serve(async (req: Request) => {
     );
 
     const hoje = new Date().toISOString().slice(0, 10);
-    // Puntuais futuros + TODOS os recorrentes (mesmo com data base no passado,
-    // para projetar as próximas ocorrências).
+    // Puntuais futuros + recorrentes (para projetar) + exceções (data_original).
     const { data, error } = await supabase
       .from("agendamentos")
-      .select("data, hora_inicio, horas, execucao, data2, status, recorrencia")
-      .in("status", ["solicitado", "confirmado"])
-      .or(`data.gte.${hoje},recorrencia.neq.pontual`)
-      .limit(500);
+      .select("id, data, hora_inicio, horas, execucao, data2, status, recorrencia, serie_id, data_original")
+      .or(`data.gte.${hoje},recorrencia.neq.pontual,data_original.not.is.null`)
+      .limit(1000);
     if (error) throw error;
+
+    const rows = data ?? [];
+
+    // Ocorrências que foram movidas/canceladas num dia específico -> não projetar.
+    const excecoes = new Set<string>();
+    for (const a of rows) {
+      if (a.serie_id && a.data_original) excecoes.add(`${a.serie_id}|${a.data_original}`);
+    }
 
     type Bloco = { data: string; inicio: string | null; horas: number };
     const ocupado: Bloco[] = [];
-    for (const a of data ?? []) {
+    for (const a of rows) {
+      if (a.status !== "solicitado" && a.status !== "confirmado") continue; // canceladas não ocupam
       if (!a.data) continue;
       // com ajudante o tempo de relógio cai ~pela metade
       const horas = Math.max(
@@ -64,7 +71,9 @@ Deno.serve(async (req: Request) => {
         ocupado.push({ data: a.data2, inicio: a.hora_inicio, horas });
       }
       for (const f of ocorrencias(a.data, a.recorrencia)) {
-        if (f >= hoje) ocupado.push({ data: f, inicio: a.hora_inicio, horas });
+        if (f < hoje) continue;
+        if (excecoes.has(`${a.id}|${f}`)) continue; // ocorrência movida ou cancelada nesse dia
+        ocupado.push({ data: f, inicio: a.hora_inicio, horas });
       }
     }
 

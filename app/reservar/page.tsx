@@ -67,6 +67,7 @@ export default function Reservar() {
   const [data, setData] = useState("");
   const [hora, setHora] = useState("");
   const [outroHorario, setOutroHorario] = useState(false);
+  const [enviado, setEnviado] = useState(false);
   const [ocupado, setOcupado] = useState<BlocoOcupado[]>([]);
 
   // Agenda real de Caridad: blocos ocupados (sem dados de clientes)
@@ -498,11 +499,37 @@ export default function Reservar() {
                 {adicionais.length > 0 && <p>{adicionais.length} adicional(is)</p>}
               </div>
 
-              <a href={whatsappHref} onClick={salvarReserva} target="_blank" rel="noopener noreferrer" className="btn-emerald btn-lg mt-6 w-full">
+              <a
+                href={whatsappHref}
+                onClick={() => {
+                  salvarReserva();
+                  setEnviado(true);
+                }}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-emerald btn-lg mt-6 w-full"
+              >
                 <IconWhatsApp width={19} height={19} />
                 Enviar pelo WhatsApp
                 <IconArrowRight width={17} height={17} />
               </a>
+
+              {enviado && (
+                <div className="mt-4 rounded-xl bg-emerald-600/25 px-4 py-3 text-sm text-emerald-50">
+                  <b className="font-semibold text-white">Pedido enviado!</b> É só confirmar o envio
+                  na conversa do WhatsApp que abriu — a Caridad responde pessoalmente para acertar
+                  tudo com você.
+                </div>
+              )}
+
+              <p className="mt-4 flex items-start gap-2 text-xs text-ivory/70">
+                <IconCheck width={15} height={15} className="mt-0.5 shrink-0 text-emerald-300" />
+                <span>
+                  <b className="font-medium text-ivory/90">Minha garantia:</b> se algo não ficar do
+                  seu jeito, eu volto e refaço, sem custo.
+                </span>
+              </p>
+
               <p className="mt-3 text-center text-xs text-ivory/50">
                 Valor e duração são estimativas e podem variar conforme o estado do imóvel. Confirmamos tudo com você pelo WhatsApp.
               </p>

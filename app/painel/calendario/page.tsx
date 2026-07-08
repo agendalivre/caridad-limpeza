@@ -24,6 +24,8 @@ type Agendamento = {
   origem: string;
   observacoes: string | null;
   endereco: string | null;
+  serie_id: string | null;
+  data_original: string | null;
   clientes: { nome: string } | null;
 };
 
@@ -93,6 +95,10 @@ function Calendario() {
   const [busy, setBusy] = useState(false);
   const [aviso, setAviso] = useState("");
   const [confirmarDel, setConfirmarDel] = useState<Agendamento | null>(null);
+  const [moverPrev, setMoverPrev] = useState<Previsao | null>(null);
+  const [moverData, setMoverData] = useState("");
+  const [moverHora, setMoverHora] = useState("");
+  const [cancelarPrev, setCancelarPrev] = useState<Previsao | null>(null);
 
   const load = useCallback(async () => {
     const [ag, cli] = await Promise.all([
@@ -140,9 +146,18 @@ function Calendario() {
     return m;
   }, [items]);
 
+  // Ocorrências movidas/canceladas num dia específico (não devem ser projetadas).
+  const excecoes = useMemo(() => {
+    const s = new Set<string>();
+    for (const a of items) {
+      if (a.serie_id && a.data_original) s.add(`${a.serie_id}|${a.data_original}`);
+    }
+    return s;
+  }, [items]);
+
   // Previsões de clientes recorrentes projetadas para os próximos meses (não são
   // linhas no banco; vêm do agendamento base + frequência).
-  type Previsao = { key: string; hora: string | null; nome: string; servico: string | null };
+  type Previsao = { key: string; dataOriginal: string; base: Agendamento; hora: string | null; nome: string; servico: string | null };
   const previsoesPorDia = useMemo(() => {
     const m: Record<string, Previsao[]> = {};
     const hojeStr = iso(new Date());
@@ -150,8 +165,11 @@ function Calendario() {
       if (a.status === "cancelado" || !a.data || !a.recorrencia || a.recorrencia === "pontual") continue;
       for (const f of ocorrenciasRecorrentes(a.data, a.recorrencia)) {
         if (f < hojeStr) continue;
+        if (excecoes.has(`${a.id}|${f}`)) continue; // movida ou cancelada só nesse dia
         (m[f] ??= []).push({
           key: a.id + "@" + f,
+          dataOriginal: f,
+          base: a,
           hora: a.hora_inicio,
           nome: a.clientes?.nome ?? "Cliente",
           servico: a.servico_nome,
@@ -159,7 +177,7 @@ function Calendario() {
       }
     }
     return m;
-  }, [items]);
+  }, [items, excecoes]);
 
   const doDia = diaSel ? (porDia[diaSel] ?? []).slice().sort((a, b) => (a.hora_inicio ?? "").localeCompare(b.hora_inicio ?? "")) : [];
   const prevDoDia = diaSel ? previsoesPorDia[diaSel] ?? [] : [];
@@ -263,6 +281,57 @@ function Calendario() {
     setConfirmarDel(null);
     if (error) { flash("Erro ao excluir."); return; }
     flash("Agendamento excluído ✔");
+    await load();
+  }
+
+  // Remarca UMA ocorrência de um cliente recorrente (a série continua igual).
+  async function moverExcecao() {
+    if (!moverPrev || !moverData) return;
+    setBusy(true);
+    const a = moverPrev.base;
+    const { error } = await supabase.from("agendamentos").insert({
+      cliente_id: a.cliente_id,
+      data: moverData,
+      hora_inicio: moverHora || a.hora_inicio,
+      valor: a.valor,
+      horas: a.horas,
+      quartos: a.quartos,
+      banheiros: a.banheiros,
+      servico_nome: a.servico_nome,
+      status: "confirmado",
+      recorrencia: "pontual",
+      origem: "manual",
+      endereco: a.endereco,
+      observacoes: a.observacoes,
+      serie_id: a.id,
+      data_original: moverPrev.dataOriginal,
+    });
+    setBusy(false);
+    setMoverPrev(null);
+    if (error) { flash("Erro ao remarcar."); return; }
+    flash("Dia remarcado ✔");
+    await load();
+  }
+
+  // Cancela SÓ esta ocorrência de um cliente recorrente (a série continua).
+  async function cancelarExcecaoDia() {
+    if (!cancelarPrev) return;
+    setBusy(true);
+    const a = cancelarPrev.base;
+    const { error } = await supabase.from("agendamentos").insert({
+      cliente_id: a.cliente_id,
+      data: null,
+      valor: a.valor,
+      status: "cancelado",
+      recorrencia: "pontual",
+      origem: "manual",
+      serie_id: a.id,
+      data_original: cancelarPrev.dataOriginal,
+    });
+    setBusy(false);
+    setCancelarPrev(null);
+    if (error) { flash("Erro ao cancelar."); return; }
+    flash("Ocorrência cancelada ✔");
     await load();
   }
 
@@ -390,8 +459,23 @@ function Calendario() {
                       </span>
                     </div>
                     <p className="mt-2 text-xs text-ink-mute">
-                      Previsão de cliente fixo. Para alterar, edite o agendamento original.
+                      Previsão de cliente fixo. Mudou só neste dia?
                     </p>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => {
+                          setMoverPrev(p);
+                          setMoverData(p.dataOriginal);
+                          setMoverHora(p.hora ? p.hora.slice(0, 5) : "");
+                        }}
+                        className="btn-ghost px-3 py-1.5 text-xs"
+                      >
+                        Mudou este dia
+                      </button>
+                      <button onClick={() => setCancelarPrev(p)} className="px-3 py-1.5 text-xs text-ink-mute hover:text-red-600">
+                        Cancelar só este dia
+                      </button>
+                    </div>
                   </div>
                 ))}
                 {doDia.map((a) => (
@@ -536,6 +620,53 @@ function Calendario() {
               <button onClick={() => setForm(null)} disabled={busy} className="btn-ghost px-4 py-2 text-sm disabled:opacity-50">Cancelar</button>
               <button onClick={salvar} disabled={busy} className="btn-emerald px-5 py-2 text-sm disabled:opacity-50">
                 <IconCheck width={15} height={15} /> {busy ? "Salvando…" : "Salvar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remarcar só uma ocorrência recorrente */}
+      {moverPrev && (
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-ink/40 px-5" onClick={() => !busy && setMoverPrev(null)}>
+          <div className="card w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
+            <p className="font-serif text-lg font-semibold text-ink">Remarcar só este dia</p>
+            <p className="mt-1 text-sm text-ink-soft">
+              {moverPrev.nome} · cliente fixo. As próximas semanas continuam iguais.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div>
+                <label className={lbl}>Nova data</label>
+                <input type="date" value={moverData} onChange={(e) => setMoverData(e.target.value)} className={inp} />
+              </div>
+              <div>
+                <label className={lbl}>Nova hora</label>
+                <input type="time" value={moverHora} onChange={(e) => setMoverHora(e.target.value)} className={inp} />
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button onClick={() => setMoverPrev(null)} disabled={busy} className="btn-ghost px-4 py-2 text-sm disabled:opacity-50">Voltar</button>
+              <button onClick={moverExcecao} disabled={busy || !moverData} className="btn-emerald px-5 py-2 text-sm disabled:opacity-50">
+                {busy ? "Salvando…" : "Remarcar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancelar só uma ocorrência recorrente */}
+      {cancelarPrev && (
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-ink/40 px-5" onClick={() => !busy && setCancelarPrev(null)}>
+          <div className="card w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
+            <p className="font-serif text-lg font-semibold text-ink">Cancelar só este dia?</p>
+            <p className="mt-2 text-sm text-ink-soft">
+              {cancelarPrev.nome} — sai só a limpeza de{" "}
+              {(() => { const [y, m, dd] = cancelarPrev.dataOriginal.split("-"); return `${dd}/${m}/${y}`; })()}. A série continua nas próximas.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button onClick={() => setCancelarPrev(null)} disabled={busy} className="btn-ghost px-4 py-2 text-sm disabled:opacity-50">Voltar</button>
+              <button onClick={cancelarExcecaoDia} disabled={busy} className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+                {busy ? "…" : "Cancelar este dia"}
               </button>
             </div>
           </div>
