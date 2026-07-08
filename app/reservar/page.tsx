@@ -66,6 +66,7 @@ export default function Reservar() {
   const [lng, setLng] = useState("");
   const [data, setData] = useState("");
   const [hora, setHora] = useState("");
+  const [outroHorario, setOutroHorario] = useState(false);
   const [ocupado, setOcupado] = useState<BlocoOcupado[]>([]);
 
   // Agenda real de Caridad: blocos ocupados (sem dados de clientes)
@@ -387,18 +388,17 @@ export default function Reservar() {
                     onChange={(e) => {
                       setData(e.target.value);
                       setHora("");
+                      setOutroHorario(false);
                     }}
                   />
                 </div>
                 {data && (
                   <div className="sm:col-span-2">
-                    <span className={label}>Horários disponíveis</span>
-                    {slots.length === 0 ? (
-                      <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                        Esse dia já está cheio para um serviço de ~{orc.horas}h — escolha outra
-                        data, ou envie mesmo assim que combinamos pelo WhatsApp. 😊
-                      </p>
-                    ) : (
+                    <span className={label}>
+                      Horário de preferência <em className="font-normal text-ink-mute">(opcional)</em>
+                    </span>
+
+                    {slots.length > 0 && !outroHorario ? (
                       <div className="flex flex-wrap gap-2">
                         {slots.map((s) => (
                           <button
@@ -414,6 +414,29 @@ export default function Reservar() {
                             {s}
                           </button>
                         ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOutroHorario(true);
+                            setHora("");
+                          }}
+                          className="cursor-pointer rounded-full border border-dashed border-line px-4 py-2 text-sm text-ink-soft transition-colors hover:border-emerald-600/50"
+                        >
+                          Outro horário
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          type="time"
+                          value={hora}
+                          onChange={(e) => setHora(e.target.value)}
+                          className={input + " max-w-[160px]"}
+                        />
+                        <p className="mt-2 text-sm text-ink-mute">
+                          Escolha o horário que preferir — eu confirmo a disponibilidade com você
+                          pelo WhatsApp. 😊
+                        </p>
                       </div>
                     )}
                   </div>

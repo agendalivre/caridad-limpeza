@@ -4,13 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { CONFIG } from "@/lib/config";
-import { linkWhatsApp } from "@/lib/whatsapp";
 import { Guard } from "@/components/painel/Guard";
 import { QrPix } from "@/components/painel/QrPix";
 import { Notificacoes } from "@/components/painel/Notificacoes";
+import { MensagensCliente } from "@/components/painel/MensagensCliente";
 import {
-  IconWhatsApp,
   IconCheck,
   IconWallet,
   IconX,
@@ -163,6 +161,13 @@ function Card({
     } catch {}
   }
 
+  const ctx = {
+    nome: a.clientes?.nome ?? "cliente",
+    quando: fmtData(a.data, a.hora_inicio),
+    valor: fmtR$(a.valor),
+    servico: a.servico_nome ?? "Limpeza",
+  };
+
   const nav = "btn-ghost px-3 py-2 text-xs";
   const act = "px-4 py-2 text-xs";
   const inp = "rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink outline-none focus:border-emerald-600";
@@ -311,17 +316,7 @@ function Card({
         )}
         {ativo && (
           <>
-            <a
-              href={linkWhatsApp(
-                `Olá ${a.clientes?.nome ?? ""}! 😊 Passando para lembrar da sua limpeza${a.data ? ` em ${fmtData(a.data, a.hora_inicio)}` : ""}. Qualquer coisa me avise. — ${CONFIG.primeiroNome}`,
-                a.clientes?.whatsapp
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`btn-ghost ${act}`}
-            >
-              <IconWhatsApp width={15} height={15} /> Lembrete
-            </a>
+            <MensagensCliente ctx={ctx} whatsapp={a.clientes?.whatsapp} className={`btn-ghost ${act}`} />
             <button onClick={() => onPix(a)} className={`btn-ghost ${act}`}>
               <IconWallet width={15} height={15} /> Cobrar Pix
             </button>
