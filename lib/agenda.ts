@@ -10,6 +10,38 @@ export const JORNADA_FIM = 19; // último horário de término
 const toHHMM = (min: number) =>
   `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 
+const isoLocal = (d: Date) => d.toLocaleDateString("sv-SE");
+
+/**
+ * Datas futuras geradas por uma recorrência, a partir de `dataBase` (exclusive)
+ * até `horizonteDias`. semanal +7, quinzenal +14, mensal +1 mês.
+ * pontual/desconhecida -> []. Assim o calendário e a disponibilidade "veem" os
+ * dias que um cliente fixo já ocupa lá na frente (estilo Parafuzo).
+ */
+export function ocorrenciasRecorrentes(
+  dataBase: string,
+  recorrencia: string | null,
+  horizonteDias = 120
+): string[] {
+  if (!dataBase || !recorrencia || recorrencia === "pontual") return [];
+  const base = new Date(dataBase + "T00:00:00");
+  if (isNaN(base.getTime())) return [];
+  const limite = new Date(base);
+  limite.setDate(limite.getDate() + horizonteDias);
+
+  const out: string[] = [];
+  const d = new Date(base);
+  for (let i = 0; i < 60; i++) {
+    if (recorrencia === "mensal") d.setMonth(d.getMonth() + 1);
+    else if (recorrencia === "quinzenal") d.setDate(d.getDate() + 14);
+    else if (recorrencia === "semanal") d.setDate(d.getDate() + 7);
+    else break;
+    if (d > limite) break;
+    out.push(isoLocal(d));
+  }
+  return out;
+}
+
 /** O dia já tem algum serviço? (regra: 1 serviço por dia). */
 export function diaOcupado(dataSel: string, ocupado: BlocoOcupado[]): boolean {
   return !!dataSel && ocupado.some((o) => o.data === dataSel);

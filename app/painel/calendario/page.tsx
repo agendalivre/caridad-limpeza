@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Guard } from "@/components/painel/Guard";
 import { LIMPEZAS } from "@/lib/precos";
+import { ocorrenciasRecorrentes } from "@/lib/agenda";
 import { IconPlus, IconX, IconCheck } from "@/components/icons";
 
 type Cliente = { id: string; nome: string; whatsapp: string; bairro: string | null; endereco: string | null };
@@ -139,7 +140,29 @@ function Calendario() {
     return m;
   }, [items]);
 
+  // Previsões de clientes recorrentes projetadas para os próximos meses (não são
+  // linhas no banco; vêm do agendamento base + frequência).
+  type Previsao = { key: string; hora: string | null; nome: string; servico: string | null };
+  const previsoesPorDia = useMemo(() => {
+    const m: Record<string, Previsao[]> = {};
+    const hojeStr = iso(new Date());
+    for (const a of items) {
+      if (a.status === "cancelado" || !a.data || !a.recorrencia || a.recorrencia === "pontual") continue;
+      for (const f of ocorrenciasRecorrentes(a.data, a.recorrencia)) {
+        if (f < hojeStr) continue;
+        (m[f] ??= []).push({
+          key: a.id + "@" + f,
+          hora: a.hora_inicio,
+          nome: a.clientes?.nome ?? "Cliente",
+          servico: a.servico_nome,
+        });
+      }
+    }
+    return m;
+  }, [items]);
+
   const doDia = diaSel ? (porDia[diaSel] ?? []).slice().sort((a, b) => (a.hora_inicio ?? "").localeCompare(b.hora_inicio ?? "")) : [];
+  const prevDoDia = diaSel ? previsoesPorDia[diaSel] ?? [] : [];
 
   function mudarMes(delta: number) {
     let m = mes + delta;
@@ -291,6 +314,8 @@ function Calendario() {
               const foraMes = d.getMonth() !== mes;
               const eHoje = dstr === hojeIso;
               const lista = porDia[dstr] ?? [];
+              const prev = previsoesPorDia[dstr] ?? [];
+              const total = lista.length + prev.length;
               return (
                 <button
                   key={dstr}
@@ -309,7 +334,14 @@ function Calendario() {
                         <span className="truncate">{a.hora_inicio ? a.hora_inicio.slice(0, 5) + " " : ""}{a.clientes?.nome ?? "Cliente"}</span>
                       </div>
                     ))}
-                    {lista.length > 3 && <div className="text-[10px] text-ink-mute">+{lista.length - 3}</div>}
+                    {lista.length < 3 &&
+                      prev.slice(0, 3 - lista.length).map((p) => (
+                        <div key={p.key} className="flex items-center gap-1 truncate text-[10px] leading-tight text-emerald-700/80 sm:text-xs">
+                          <span className="h-1.5 w-1.5 shrink-0 rounded-full border border-emerald-500 bg-transparent" />
+                          <span className="truncate">{p.hora ? p.hora.slice(0, 5) + " " : ""}{p.nome}</span>
+                        </div>
+                      ))}
+                    {total > 3 && <div className="text-[10px] text-ink-mute">+{total - 3}</div>}
                   </div>
                 </button>
               );
@@ -324,6 +356,9 @@ function Calendario() {
               <span className={`h-2 w-2 rounded-full ${STATUS_CLS[s]}`} /> {STATUS_LABEL[s]}
             </span>
           ))}
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full border border-emerald-500 bg-transparent" /> Recorrente (previsão)
+          </span>
         </div>
 
         {/* Dia selecionado */}
@@ -337,10 +372,28 @@ function Calendario() {
                 <IconPlus width={15} height={15} /> Novo
               </button>
             </div>
-            {doDia.length === 0 ? (
+            {doDia.length === 0 && prevDoDia.length === 0 ? (
               <p className="text-sm text-ink-mute">Nenhum agendamento nesse dia. Toque em “Novo” para adicionar.</p>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
+                {prevDoDia.map((p) => (
+                  <div key={p.key} className="card border-dashed p-4 opacity-90">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-ink">{p.nome}</p>
+                        <p className="text-sm text-ink-mute">
+                          {p.hora ? p.hora.slice(0, 5) + " · " : ""}{p.servico ?? "Limpeza"}
+                        </p>
+                      </div>
+                      <span className="flex shrink-0 items-center gap-1 text-xs text-emerald-700">
+                        <span className="h-2 w-2 rounded-full border border-emerald-500 bg-transparent" /> Recorrente
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-ink-mute">
+                      Previsão de cliente fixo. Para alterar, edite o agendamento original.
+                    </p>
+                  </div>
+                ))}
                 {doDia.map((a) => (
                   <div key={a.id} className="card p-4">
                     <div className="flex items-start justify-between gap-2">
