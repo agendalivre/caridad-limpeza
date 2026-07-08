@@ -114,6 +114,7 @@ function rotaLink(items: Agendamento[]): string | null {
 function Card({
   a,
   busy,
+  conflito,
   onStatus,
   onPago,
   onCancelar,
@@ -124,6 +125,7 @@ function Card({
 }: {
   a: Agendamento;
   busy: boolean;
+  conflito: boolean;
   onStatus: (id: string, s: string) => void;
   onPago: (a: Agendamento) => void;
   onCancelar: (a: Agendamento) => void;
@@ -233,6 +235,12 @@ function Card({
           <dd className="font-serif text-xl font-semibold text-ink">{fmtR$(a.valor)}</dd>
         </div>
       </dl>
+
+      {ativo && conflito && (
+        <p className="mt-4 rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-900">
+          ⚠️ Você já tem outro serviço nesse dia. O ideal é 1 por dia — que tal remarcar?
+        </p>
+      )}
 
       {ativo && (
         <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4">
@@ -482,6 +490,13 @@ function Painel() {
     else await mudarStatus(a.id, "cancelado");
   }
 
+  // Regra de Caridad: 1 serviço por dia. Conta serviços ativos por data para avisar choques.
+  const ativosPorDia = new Map<string, number>();
+  for (const i of items) {
+    if ((i.status === "solicitado" || i.status === "confirmado") && i.data)
+      ativosPorDia.set(i.data, (ativosPorDia.get(i.data) ?? 0) + 1);
+  }
+
   const solicitacoes = items.filter((i) => i.status === "solicitado");
   const amanha = items.filter((i) => i.status === "confirmado" && i.data === AMANHA());
   const agendados = items.filter((i) => i.status === "confirmado" && i.data !== AMANHA());
@@ -493,6 +508,7 @@ function Painel() {
       key={a.id}
       a={a}
       busy={busy === a.id}
+      conflito={!!(a.data && (ativosPorDia.get(a.data) ?? 0) > 1)}
       onStatus={mudarStatus}
       onPago={(x) => setConfirmacao({ tipo: "pago", a: x })}
       onCancelar={(x) => setConfirmacao({ tipo: "cancelar", a: x })}

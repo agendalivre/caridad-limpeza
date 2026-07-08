@@ -14,7 +14,7 @@ import {
   type Frequencia,
 } from "@/lib/precos";
 import { linkWhatsApp, mensagemReserva } from "@/lib/whatsapp";
-import { slotsDisponiveis, type BlocoOcupado } from "@/lib/agenda";
+import { slotsDisponiveis, diaOcupado, type BlocoOcupado } from "@/lib/agenda";
 import { IconPlus, IconMinus, IconWhatsApp, IconArrowRight, IconMapPin, IconCheck } from "@/components/icons";
 
 function Stepper({
@@ -136,6 +136,7 @@ export default function Reservar() {
     () => slotsDisponiveis(data, orc.horas, ocupado),
     [data, orc.horas, ocupado]
   );
+  const diaCheio = useMemo(() => diaOcupado(data, ocupado), [data, ocupado]);
   const hojeISO = new Date().toLocaleDateString("sv-SE");
 
   const enderecoStr = [logradouro, numero && `nº ${numero}`, complemento, bairro]
@@ -398,7 +399,12 @@ export default function Reservar() {
                       Horário de preferência <em className="font-normal text-ink-mute">(opcional)</em>
                     </span>
 
-                    {slots.length > 0 && !outroHorario ? (
+                    {diaCheio ? (
+                      <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        Esse dia já está reservado 😊 Escolha outro dia — assim eu cuido da sua
+                        casa com todo o tempo e o carinho que ela merece.
+                      </p>
+                    ) : slots.length > 0 && !outroHorario ? (
                       <div className="flex flex-wrap gap-2">
                         {slots.map((s) => (
                           <button

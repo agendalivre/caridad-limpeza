@@ -1,36 +1,35 @@
-// Disponibilidade: calcula horários livres do dia a partir dos blocos ocupados
-// da agenda de Caridad (via edge function pública /disponibilidade).
+// Disponibilidade: regra do negócio de Caridad = NO MÁXIMO 1 serviço por dia
+// (mesmo curto). Se o dia já tem um serviço, o dia inteiro fica indisponível.
+// Caso contrário, sugere horários de início (a hora é só quando ela começa).
 
 export type BlocoOcupado = { data: string; inicio: string | null; horas: number };
 
 export const JORNADA_INICIO = 8; // 08:00
 export const JORNADA_FIM = 19; // último horário de término
-export const BUFFER_H = 1; // deslocamento entre serviços
 
-const toMin = (hhmm: string) => {
-  const [h, m] = hhmm.split(":").map(Number);
-  return h * 60 + (m || 0);
-};
 const toHHMM = (min: number) =>
   `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 
+/** O dia já tem algum serviço? (regra: 1 serviço por dia). */
+export function diaOcupado(dataSel: string, ocupado: BlocoOcupado[]): boolean {
+  return !!dataSel && ocupado.some((o) => o.data === dataSel);
+}
+
 /**
- * Horários de início livres para `dataSel`, dado que o serviço dura `horasServico`.
- * Slots de hora em hora, jornada 08:00–19:00, com 1h de buffer entre serviços.
+ * Horários de início sugeridos para `dataSel`.
+ * - Se o dia já está ocupado -> [] (1 serviço por dia).
+ * - Se está livre -> horários de hora em hora na jornada 08:00–19:00.
+ *   A hora é só o INÍCIO; serviços longos Caridad organiza (até 2 dias), por isso
+ *   a duração é limitada à jornada só para calcular o último início possível.
  */
 export function slotsDisponiveis(
   dataSel: string,
   horasServico: number,
   ocupado: BlocoOcupado[]
 ): string[] {
-  if (!dataSel) return [];
-  const doDia = ocupado.filter((o) => o.data === dataSel && o.inicio);
-  const dur = Math.max(1, horasServico) * 60; // duração real — usada para não sobrepor
-  const buffer = BUFFER_H * 60;
+  if (!dataSel || diaOcupado(dataSel, ocupado)) return [];
 
-  // O horário escolhido é só o INÍCIO; serviços longos Caridad organiza (até 2 dias).
-  // Por isso o último início possível usa a duração limitada à jornada, senão um
-  // serviço de +11h nunca caberia e o dia (mesmo vazio) apareceria sem horários.
+  const dur = Math.max(1, horasServico) * 60;
   const janela = (JORNADA_FIM - JORNADA_INICIO) * 60;
   const durEncaixe = Math.min(dur, janela);
 
@@ -41,13 +40,7 @@ export function slotsDisponiveis(
   const slots: string[] = [];
   for (let ini = JORNADA_INICIO * 60; ini + durEncaixe <= JORNADA_FIM * 60; ini += 60) {
     if (ini <= agoraMin) continue; // hoje: só horários futuros
-    const fim = ini + dur;
-    const livre = doDia.every((o) => {
-      const oIni = toMin((o.inicio as string).slice(0, 5));
-      const oFim = oIni + o.horas * 60;
-      return fim + buffer <= oIni || ini >= oFim + buffer;
-    });
-    if (livre) slots.push(toHHMM(ini));
+    slots.push(toHHMM(ini));
   }
   return slots;
 }
